@@ -1,0 +1,12 @@
+#!/bin/bash
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+REGEX='^Sprint-[0-9]{4,}-[0-9]+/SCD-[0-9]+'
+export ERROR_MSG="Branch name format must match regex \"${REGEX}\""
+if [[ $BRANCH =~ $REGEX ]]; then
+    echo "Branch naming conventions: OK"
+else
+    echo "Branch naming conventions: FAILED"
+    echo $ERROR_MSG
+    exit 1
+fi
+exit 0

@@ -1,0 +1,32 @@
+#!/bin/bash
+MSG_FILE=$1
+MSG_TYPE=$2
+FILE_CONTENT="$(cat $MSG_FILE)"
+export COMMIT_REGEX='^(SCD-[0-9]+:|Merge) .+'
+# If commit is already good, take it
+if [[ $FILE_CONTENT =~ $COMMIT_REGEX ]]; then
+ exit 0
+fi
+# Skip files
+skip_list=`git rev-parse --git-dir`"/hooks/pre-commit.skip"
+echo $skip_list
+if [[ -f $skip_list ]]; then
+  if grep -E "^$BRANCH$" $skip_list; then
+    exit 0
+  fi
+fi
+# Get current branch
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+#export BRANCH_REGEX='^Sprint-[0-9]{4,}-[0-9]+/(SCD-[0-9]+)'
+# Create prefix based off parsing branch name
+STORY=$(echo ${BRANCH} | awk 'match($0, /SCD-[0-9]+/) {print toupper(substr($0, RSTART, 1))  substr($0, RSTART + 1, RLENGTH - 1)}')
+# If unable to parse story information from branch abort with zero
+# Our other commit hook will catch bad commits for exit 0
+if [[ ! $STORY ]]; then
+  echo "Failed to prepend ticket prefix"
+  exit 0
+fi
+# Add story to commit in attempt to make it good
+echo "Prepending branch information \"$STORY\"..."
+echo "$STORY: $FILE_CONTENT" > $MSG_FILE
+exit 0
